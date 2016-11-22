@@ -98,6 +98,7 @@
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="js/ie10-viewport-bug-workaround.js"></script>
 		<script>
+			var URL = 'http://localhost/TBA/public';
 			var tripsList = false;
 			var trips = false;
 			var flights = 0;
@@ -105,7 +106,7 @@
 				if (trips === false)
 				{
 					// Get a lit of airports, from the API
-					$.getJSON("http://localhost/TBA/public/trips", function(data) {
+					$.getJSON(URL+"/trips", function(data) {
 						tripsList = data;
 						trips = '<select id="main-list" class="airports-list">';
 						trips += '<option value="0">-- Please chose one --</option>';
@@ -126,7 +127,7 @@
 					});
 				}
 				$("#resetTrip").click(function(){
-					$("#mainTripsList").html("Please select an airport you want to start your trip from:<br>"+trips);
+					$("#mainTripsList").html("Please select the trip you would like to modify:<br>"+trips);
 					$("#main-list").attr("disabled", false);
 					$("#main-list").val(0);
 					$("#mainFlightsList").html("");
@@ -153,7 +154,7 @@
 								}
 							}
 						});
-						$.post( "http://localhost/TBA/public/updatetrip", {
+						$.post( URL+"/updatetrip", {
 							  id: $("#inputId").val()
 							, name: $("#inputName").val()
 							, airports: airportList
@@ -179,7 +180,7 @@
 						// Get a lit of flights from the selected trip, we need to contact the API only when we are at the last flight
 						if (!isMain)
 						{
-							$.getJSON("http://localhost/TBA/public/airport/"+selectedAirport, function(data) {
+							$.getJSON(URL+"/airport/"+selectedAirport, function(data) {
 								flights++;
 								var flightSelect = '<select class="airports-list">';
 								flightSelect += '<option value="0">-- Please chose one --</option>';
@@ -196,7 +197,7 @@
 						}
 						else
 						{
-							$.getJSON("http://localhost/TBA/public/trip/"+selectedAirport, function(trip) {
+							$.getJSON(URL+"/trip/"+selectedAirport, function(trip) {
 								$("#inputId").val(trip.id);
 								$("#inputName").val(trip.name);
 								var originalAirport = false;
@@ -210,7 +211,7 @@
 									lastAirport = destinationAirport;
 									var originAirport = flight.origin.id;
 									$("#mainFlightsList").append("<div class='row' id='A"+flight.origin.id+"'></div>");
-									$.getJSON("http://localhost/TBA/public/airport/"+originAirport, function(data) {
+									$.getJSON(URL+"/airport/"+originAirport, function(data) {
 										flights++;
 										var flightSelect = '<select class="airports-list" disabled>';
 										flightSelect += '<option value="0">-- Please chose one --</option>';
@@ -226,7 +227,7 @@
 								});
 								if (lastAirport !== false)
 								{
-									$.getJSON("http://localhost/TBA/public/airport/"+lastAirport, function(data) {
+									$.getJSON(URL+"/airport/"+lastAirport, function(data) {
 										flights++;
 										var flightSelect = '<select class="airports-list">';
 										flightSelect += '<option value="0">-- Please chose one --</option>';

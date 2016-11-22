@@ -96,13 +96,14 @@
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="js/ie10-viewport-bug-workaround.js"></script>
 		<script>
+			var URL = 'http://localhost/TBA/public';
 			var airports = false;
 			var flights = 0;
 			$(document).ready(function() {
 				if (airports === false)
 				{
 					// Get a lit of airports, from the API
-					$.getJSON("http://localhost/TBA/public/airports", function(data) {
+					$.getJSON(URL+"/airports", function(data) {
 						airports = '<select id="main-list" class="airports-list">';
 						airports += '<option value="0">-- Please chose one --</option>';
 						$.each(data, function(key, val) {
@@ -135,7 +136,7 @@
 								airportList[i] = $(selected).val();
 							}
 						});
-						$.post( "http://localhost/TBA/public/savetrip", {
+						$.post( URL+"/savetrip", {
 							  name: $("#inputName").val()
 							, airports: airportList
 						}, function( data ){
@@ -158,7 +159,7 @@
 					if (selectedAirport !== "0")
 					{
 						// Get a lit of flights from the selected airport, from the API
-						$.getJSON("http://localhost/TBA/public/airport/"+selectedAirport, function(data) {
+						$.getJSON(URL+"/airport/"+selectedAirport, function(data) {
 							if (!isMain)
 							{
 								flights++;
