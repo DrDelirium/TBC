@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="A Simple front end of the Trip Builder API">
+    <meta name="author" content="DrDelirium">
+    <link rel="icon" href="favicon.ico">
+
+    <title>Trip Builder FrontEnd</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="css/bootstrap-theme.min.css" rel="stylesheet">
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <link href="css/ie10-viewport-bug-workaround.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="theme.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Trip Builder FrontEnd</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="newTrip"><a href="index.html">Create a new Trip</a></li>
+            <li class="oldTrip active"><a href="index2.html">Modify a Trip</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container theme-showcase" role="main">
+
+      <div class="page-header">
+        <h1>Modify your trip to suit your needs!</h1>
+      </div>
+			<div class="row">
+				<div id="mainTripsList" class="col-xs-12">
+					Please select the trip you would like to modify:<br>
+				</div>
+			</div>
+			<div class="row">
+				<div id="mainFlightsList" class="col-xs-12"></div>
+			</div>
+			<div class="row">
+				<div id="tripActions" class="col-xs-12" style="display: none;">
+					<br>
+					<form class="form-inline">
+						<div class="form-group">
+							<label for="inputName">Please enter a name for this trip: </label>
+							<input type="text" class="form-control" id="inputName" placeholder="ex: Trip of Jane Doe">
+						</div>
+						<input type="hidden" id="inputId">
+						<input type="hidden" id="inputOriginalAirport">
+					</form>
+					<br>
+					<button id="resetTrip" class="btn btn-primary">Reset</button> <button id="saveTrip" class="btn btn-success">Save Trip</button>
+				</div>
+			</div>
+
+
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery.min.js"><\/script>');</script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/utils.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="js/ie10-viewport-bug-workaround.js"></script>
+		<script>
+			var tripsList = false;
+			var trips = false;
+			var flights = 0;
+			$(document).ready(function() {
+				if (trips === false)
+				{
+					// Get a lit of airports, from the API
+					$.getJSON("http://localhost/TBA/public/trips", function(data) {
+						tripsList = data;
+						trips = '<select id="main-list" class="airports-list">';
+						trips += '<option value="0">-- Please chose one --</option>';
+						$.each(data, function(tkey, trip) {
+							trips += '<option value="' + trip.id + '">' + trip.name + " (";
+							var flightCodes = [];
+							$.each(trip.flights, function(fkey, flight) {
+								if (flightCodes.length === 0)
+								{
+									flightCodes.push(flight.origin.code);
+								}
+								flightCodes.push(flight.destination.code);
+							});
+							trips += flightCodes.join(", ") + ")</option>";
+						});
+						trips += '</select>';
+						$("#mainTripsList").append(trips);
+					});
+				}
+				$("#resetTrip").click(function(){
+					$("#mainTripsList").html("Please select an airport you want to start your trip from:<br>"+trips);
+					$("#main-list").attr("disabled", false);
+					$("#main-list").val(0);
+					$("#mainFlightsList").html("");
+					flights = 0;
+					checkTripActions(flights);
+				});
+				$("#saveTrip").click(function(){
+					if ($("#inputName").val() === "")
+					{
+						$("#inputName").parent(".form-group").addClass("has-error");
+						alert("You must provide a name to save this trip.");
+					}
+					else
+					{
+						var airportList = [];
+						airportList.push($("#inputOriginalAirport").val());
+						$('.airports-list :selected').each(function(i, selected){
+							// must remove the first because it's the trip list here
+							if (i !== 0)
+							{
+								if ($(selected).val() !== "0")
+								{
+									airportList.push($(selected).val());
+								}
+							}
+						});
+						$.post( "http://localhost/TBA/public/updatetrip", {
+							  id: $("#inputId").val()
+							, name: $("#inputName").val()
+							, airports: airportList
+						}, function( data ){
+							if (data.message === "success")
+							{
+								alert("Trip updated successfully!");
+								location.href = "index2.html";
+							}
+							else
+							{
+								alert("Something went wrong. We were unable to record your trip at this moment. Please try again in a few minutes.");
+							}
+						});
+					}
+				});
+				$("body").on("change", ".airports-list", function(){
+					var selectedAirport = $(this).val();
+					$(this).attr("disabled", true);
+					var isMain = ((typeof $(this).attr("id") !== typeof undefined) && ($(this).attr("id") === "main-list"));
+					if (selectedAirport !== "0")
+					{
+						// Get a lit of flights from the selected trip, we need to contact the API only when we are at the last flight
+						if (!isMain)
+						{
+							$.getJSON("http://localhost/TBA/public/airport/"+selectedAirport, function(data) {
+								flights++;
+								var flightSelect = '<select class="airports-list">';
+								flightSelect += '<option value="0">-- Please chose one --</option>';
+								$.each(data.destinations, function(key, val) {
+									flightSelect += "<option value='" + val.id + "'>" + val.name + " (" + val.country + ") [" + val.code + "]</option>";
+								});
+								flightSelect += '</select>';
+								var newData = $("<div class='row' id='"+flights+"'></div>").html(
+									'<div class="col-xs-12 flight"><button class="btn btn-sm btn-danger remFlight pull-right"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true" title="Remove"></span></button><strong>'+data.name+'</strong><br>'+data.country+' - <strong>'+data.code+'</strong><br>Please select the next destination in your journey:<br>'+flightSelect+'</div>'
+								);
+								$("#mainFlightsList").append(newData);
+								checkTripActions(flights);
+							});
+						}
+						else
+						{
+							$.getJSON("http://localhost/TBA/public/trip/"+selectedAirport, function(trip) {
+								$("#inputId").val(trip.id);
+								$("#inputName").val(trip.name);
+								var originalAirport = false;
+								var lastAirport = false;
+								$.each(trip.flights, function(fkey, flight) {
+									if (originalAirport === false)
+									{
+										originalAirport = flight.origin.id;
+									}
+									var destinationAirport = ((typeof flight.destination.id !== typeof undefined) ? flight.destination.id : 0);
+									lastAirport = destinationAirport;
+									var originAirport = flight.origin.id;
+									$("#mainFlightsList").append("<div class='row' id='A"+flight.origin.id+"'></div>");
+									$.getJSON("http://localhost/TBA/public/airport/"+originAirport, function(data) {
+										flights++;
+										var flightSelect = '<select class="airports-list" disabled>';
+										flightSelect += '<option value="0">-- Please chose one --</option>';
+										$.each(data.destinations, function(key, val) {
+											flightSelect += "<option value='" + val.id + "'" + ((val.id === destinationAirport)?' selected="selected"':'') + ">" + val.name + " (" + val.country + ") [" + val.code + "]</option>";
+										});
+										flightSelect += '</select>';
+										var newData = ('<div class="col-xs-12 flight"><button class="btn btn-sm btn-danger remFlight pull-right"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true" title="Remove"></span></button><strong>'+data.name+'</strong><br>'+data.country+' - <strong>'+data.code+'</strong><br>Please select the next destination in your journey:<br>'+flightSelect+'</div>'
+										);
+										$("#A"+originAirport).append(newData);
+										checkTripActions(flights);
+									});
+								});
+								if (lastAirport !== false)
+								{
+									$.getJSON("http://localhost/TBA/public/airport/"+lastAirport, function(data) {
+										flights++;
+										var flightSelect = '<select class="airports-list">';
+										flightSelect += '<option value="0">-- Please chose one --</option>';
+										$.each(data.destinations, function(key, val) {
+											flightSelect += "<option value='" + val.id + "'>" + val.name + " (" + val.country + ") [" + val.code + "]</option>";
+										});
+										flightSelect += '</select>';
+										var newData = $("<div class='row' id='"+flights+"'></div>").html(
+											'<div class="col-xs-12 flight"><button class="btn btn-sm btn-danger remFlight pull-right"><span class="glyphicon glyphicon-remove-circle" aria-hidden="true" title="Remove"></span></button><strong>'+data.name+'</strong><br>'+data.country+' - <strong>'+data.code+'</strong><br>Please select the next destination in your journey:<br>'+flightSelect+'</div>'
+										);
+										$("#mainFlightsList").append(newData);
+										checkTripActions(flights);
+									});
+								}
+								$("#inputOriginalAirport").val(originalAirport);
+								$("#mainTripsList").hide();
+								//$("#mainFlightsList").html(newData);
+							});
+						}
+					}
+					else
+					{
+						if (isMain)
+						{
+							$("#mainTripsList").html("Please select the trip you would like to modify:<br>"+trips);
+							$("#mainFlightsList").html("");
+							flights = 0;
+						}
+						else
+						{
+							if (flights > 1)
+							{
+								var parentRow = $(this).parent().parent();
+								var containerDiv = parentRow.parent();
+								parentRow.nextAll().remove();
+								flights = containerDiv.children().length;
+							}
+						}
+						checkTripActions(flights);
+					}
+				});
+				$("body").on("click", ".remFlight", function(){
+					var parentRow = $(this).parent().parent();
+					var containerDiv = parentRow.parent();
+					new BstrapModal("Are you sure?","This will remove this flight and all other flights you might have selected after this one.", [{
+								Value: "Close"
+							, Css: "btn-primary"
+							, Callback: function (event) { BstrapModal.Close(); }
+					},{
+								Value: "Yes remove this flight"
+							, Css: "btn-danger"
+							, Callback: function (event) {
+
+								parentRow.nextAll().addBack().remove();
+								flights = containerDiv.children().length;
+								if (flights > 0)
+								{
+									containerDiv.children().last().find(".airports-list").attr("disabled", false);
+									containerDiv.children().last().find(".airports-list").val(0);
+								}
+								else
+								{
+									$("#mainTripsList").show();
+									$("#main-list").attr("disabled", false);
+									$("#main-list").val(0);
+								}
+								checkTripActions(flights);
+								BstrapModal.Close();
+							}
+					}]).Show();
+				});
+				function checkTripActions(numFlight)
+				{
+					if (numFlight >= 2)
+					{
+						$("#tripActions").show();
+					}
+					else
+					{
+						$("#tripActions").hide();
+					}
+				}
+			});
+		</script>
+  </body>
+</html>
